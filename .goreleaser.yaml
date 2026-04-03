@@ -1,0 +1,133 @@
+version: 2
+
+project_name: sentry-operator
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: manager
+    main: ./cmd/main.go
+    binary: manager
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+
+dockers:
+  - id: amd64
+    goos: linux
+    goarch: amd64
+    image_templates:
+      - ghcr.io/agjmills/sentry-operator:{{ .Tag }}-amd64
+      - ghcr.io/agjmills/sentry-operator:latest-amd64
+    dockerfile: Dockerfile.goreleaser
+    use: buildx
+    build_flag_templates:
+      - --platform=linux/amd64
+      - --label=org.opencontainers.image.title={{ .ProjectName }}
+      - --label=org.opencontainers.image.version={{ .Tag }}
+      - --label=org.opencontainers.image.created={{ .Date }}
+      - --label=org.opencontainers.image.source=https://github.com/agjmills/sentry-operator
+      - --label=org.opencontainers.image.revision={{ .FullCommit }}
+      - --label=org.opencontainers.image.licenses=Apache-2.0
+
+  - id: arm64
+    goos: linux
+    goarch: arm64
+    image_templates:
+      - ghcr.io/agjmills/sentry-operator:{{ .Tag }}-arm64
+      - ghcr.io/agjmills/sentry-operator:latest-arm64
+    dockerfile: Dockerfile.goreleaser
+    use: buildx
+    build_flag_templates:
+      - --platform=linux/arm64
+      - --label=org.opencontainers.image.title={{ .ProjectName }}
+      - --label=org.opencontainers.image.version={{ .Tag }}
+      - --label=org.opencontainers.image.created={{ .Date }}
+      - --label=org.opencontainers.image.source=https://github.com/agjmills/sentry-operator
+      - --label=org.opencontainers.image.revision={{ .FullCommit }}
+      - --label=org.opencontainers.image.licenses=Apache-2.0
+
+docker_manifests:
+  - name_template: ghcr.io/agjmills/sentry-operator:{{ .Tag }}
+    image_templates:
+      - ghcr.io/agjmills/sentry-operator:{{ .Tag }}-amd64
+      - ghcr.io/agjmills/sentry-operator:{{ .Tag }}-arm64
+
+  - name_template: ghcr.io/agjmills/sentry-operator:latest
+    image_templates:
+      - ghcr.io/agjmills/sentry-operator:latest-amd64
+      - ghcr.io/agjmills/sentry-operator:latest-arm64
+
+  - name_template: ghcr.io/agjmills/sentry-operator:{{ .Major }}
+    image_templates:
+      - ghcr.io/agjmills/sentry-operator:{{ .Tag }}-amd64
+      - ghcr.io/agjmills/sentry-operator:{{ .Tag }}-arm64
+
+  - name_template: ghcr.io/agjmills/sentry-operator:{{ .Major }}.{{ .Minor }}
+    image_templates:
+      - ghcr.io/agjmills/sentry-operator:{{ .Tag }}-amd64
+      - ghcr.io/agjmills/sentry-operator:{{ .Tag }}-arm64
+
+archives:
+  - formats: [tar.gz]
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+
+checksum:
+  name_template: checksums.txt
+
+sboms:
+  - artifacts: archive
+  - id: binary
+    artifacts: binary
+
+signs:
+  - cmd: cosign
+    certificate: "${artifact}.pem"
+    args:
+      - sign-blob
+      - --output-signature=${signature}
+      - --output-certificate=${certificate}
+      - ${artifact}
+    artifacts: checksum
+    output: true
+
+docker_signs:
+  - cmd: cosign
+    args:
+      - sign
+      - --yes
+      - ${artifact}
+    artifacts: manifests
+    output: true
+
+changelog:
+  use: github
+  sort: asc
+  groups:
+    - title: Features
+      regexp: '^feat'
+      order: 0
+    - title: Bug Fixes
+      regexp: '^fix'
+      order: 1
+    - title: Other
+      order: 999
+  filters:
+    exclude:
+      - '^chore'
+      - '^docs'
+      - '^test'
+
+release:
+  github:
+    owner: agjmills
+    name: sentry-operator
+  name_template: "{{ .Tag }}"
