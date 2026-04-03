@@ -20,61 +20,24 @@ builds:
     ldflags:
       - -s -w
 
-dockers:
-  - id: amd64
-    goos: linux
-    goarch: amd64
-    image_templates:
-      - ghcr.io/agjmills/sentry-operator:{{ .Tag }}-amd64
-      - ghcr.io/agjmills/sentry-operator:latest-amd64
+dockers_v2:
+  - id: sentry-operator
     dockerfile: Dockerfile.goreleaser
-    use: buildx
+    image_templates:
+      - ghcr.io/agjmills/sentry-operator:{{ .Tag }}
+      - ghcr.io/agjmills/sentry-operator:latest
+      - ghcr.io/agjmills/sentry-operator:{{ .Major }}
+      - ghcr.io/agjmills/sentry-operator:{{ .Major }}.{{ .Minor }}
     build_flag_templates:
-      - --platform=linux/amd64
       - --label=org.opencontainers.image.title={{ .ProjectName }}
       - --label=org.opencontainers.image.version={{ .Tag }}
       - --label=org.opencontainers.image.created={{ .Date }}
       - --label=org.opencontainers.image.source=https://github.com/agjmills/sentry-operator
       - --label=org.opencontainers.image.revision={{ .FullCommit }}
       - --label=org.opencontainers.image.licenses=Apache-2.0
-
-  - id: arm64
-    goos: linux
-    goarch: arm64
-    image_templates:
-      - ghcr.io/agjmills/sentry-operator:{{ .Tag }}-arm64
-      - ghcr.io/agjmills/sentry-operator:latest-arm64
-    dockerfile: Dockerfile.goreleaser
-    use: buildx
-    build_flag_templates:
-      - --platform=linux/arm64
-      - --label=org.opencontainers.image.title={{ .ProjectName }}
-      - --label=org.opencontainers.image.version={{ .Tag }}
-      - --label=org.opencontainers.image.created={{ .Date }}
-      - --label=org.opencontainers.image.source=https://github.com/agjmills/sentry-operator
-      - --label=org.opencontainers.image.revision={{ .FullCommit }}
-      - --label=org.opencontainers.image.licenses=Apache-2.0
-
-docker_manifests:
-  - name_template: ghcr.io/agjmills/sentry-operator:{{ .Tag }}
-    image_templates:
-      - ghcr.io/agjmills/sentry-operator:{{ .Tag }}-amd64
-      - ghcr.io/agjmills/sentry-operator:{{ .Tag }}-arm64
-
-  - name_template: ghcr.io/agjmills/sentry-operator:latest
-    image_templates:
-      - ghcr.io/agjmills/sentry-operator:latest-amd64
-      - ghcr.io/agjmills/sentry-operator:latest-arm64
-
-  - name_template: ghcr.io/agjmills/sentry-operator:{{ .Major }}
-    image_templates:
-      - ghcr.io/agjmills/sentry-operator:{{ .Tag }}-amd64
-      - ghcr.io/agjmills/sentry-operator:{{ .Tag }}-arm64
-
-  - name_template: ghcr.io/agjmills/sentry-operator:{{ .Major }}.{{ .Minor }}
-    image_templates:
-      - ghcr.io/agjmills/sentry-operator:{{ .Tag }}-amd64
-      - ghcr.io/agjmills/sentry-operator:{{ .Tag }}-arm64
+    platforms:
+      - linux/amd64
+      - linux/arm64
 
 archives:
   - formats: [tar.gz]
@@ -105,7 +68,7 @@ docker_signs:
       - sign
       - --yes
       - ${artifact}
-    artifacts: manifests
+    artifacts: images
     output: true
 
 changelog:
