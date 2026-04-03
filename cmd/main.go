@@ -33,16 +33,16 @@ func init() {
 
 func main() {
 	var (
-		metricsAddr          string
-		probeAddr            string
-		leaderElect          bool
-		sentryURL            string
-		sentryTokenEnv       string
-		defaultOrganization  string
-		defaultTeam          string
-		defaultPlatform      string
-		defaultRetainOnDel   bool
-		requeueInterval      time.Duration
+		metricsAddr         string
+		probeAddr           string
+		leaderElect         bool
+		sentryURL           string
+		sentryTokenEnv      string
+		defaultOrganization string
+		defaultTeam         string
+		defaultPlatform     string
+		defaultRetainOnDel  bool
+		requeueInterval     time.Duration
 	)
 
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
