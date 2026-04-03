@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/agjmills/sentry-operator/compare/v1.0.0...v1.0.1) (2026-04-03)
+
+
+### Bug Fixes
+
+* allow manual trigger of release-please workflow ([66e5758](https://github.com/agjmills/sentry-operator/commit/66e5758390f82ec8954a8eb07dfd461867424d67))
+
 ## 1.0.0 (2026-04-03)
 
 
