@@ -1,0 +1,26 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "sentry-operator.fullname" . }}
+  labels:
+    {{- include "sentry-operator.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ["sentry-operator.io"]
+    resources: ["sentryprojects"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["sentry-operator.io"]
+    resources: ["sentryprojects/status"]
+    verbs: ["get", "update", "patch"]
+  - apiGroups: ["sentry-operator.io"]
+    resources: ["sentryprojects/finalizers"]
+    verbs: ["update"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+  # Leader election
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]

@@ -1,0 +1,17 @@
+apiVersion: v2
+name: sentry-operator
+description: Kubernetes operator that automatically provisions Sentry projects and injects DSNs as Secrets.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - sentry
+  - operator
+  - monitoring
+  - error-tracking
+home: https://github.com/agjmills/sentry-operator
+sources:
+  - https://github.com/agjmills/sentry-operator
+maintainers:
+  - name: agjmills
+    url: https://github.com/agjmills

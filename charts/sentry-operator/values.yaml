@@ -1,0 +1,75 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/agjmills/sentry-operator
+  pullPolicy: IfNotPresent
+  # Overrides the image tag. Defaults to the chart's appVersion.
+  tag: ""
+
+imagePullSecrets: []
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 32Mi
+  limits:
+    memory: 64Mi
+
+# Sentry operator configuration
+operator:
+  # Base URL of the Sentry instance. Use https://sentry.io for Sentry Cloud.
+  sentryURL: "https://sentry.io"
+
+  # Environment variable name that holds the Sentry auth token.
+  # The token must have project:read and project:write scopes.
+  sentryTokenEnv: "SENTRY_TOKEN"
+
+  # Default Sentry organization slug. Applied to all SentryProjects that don't
+  # set spec.organization.
+  defaultOrganization: ""
+
+  # Default Sentry team slug. Applied to all SentryProjects that don't set spec.team.
+  defaultTeam: ""
+
+  # Default platform. Applied to all SentryProjects that don't set spec.platform.
+  defaultPlatform: ""
+
+  # Default retainOnDelete behaviour for projects whose spec.retainOnDelete is unset.
+  defaultRetainOnDelete: true
+
+  # How often the operator re-validates existing projects against the Sentry API.
+  requeueInterval: "24h"
+
+  # Enable leader election. Recommended when running multiple replicas.
+  leaderElect: false
+
+# Name of an existing Secret containing the Sentry auth token.
+# The secret must have a key matching operator.sentryTokenEnv.
+# If unset, you must supply the token via another mechanism (e.g. ExternalSecret).
+existingSecret: ""
+
+# If existingSecret is unset, you can provide the token directly (not recommended for production).
+sentryToken: ""
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
