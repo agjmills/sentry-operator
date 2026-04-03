@@ -41,9 +41,16 @@ type Project struct {
 
 // DSNKey represents a Sentry client key (DSN).
 type DSNKey struct {
-	ID    string  `json:"id"`
-	Label string  `json:"label"`
-	DSN   dsnData `json:"dsn"`
+	ID        string    `json:"id"`
+	Label     string    `json:"label"`
+	DSN       dsnData   `json:"dsn"`
+	RateLimit RateLimit `json:"rateLimit"`
+}
+
+// RateLimit represents the rate limit configuration for a DSN key.
+type RateLimit struct {
+	Count  int `json:"count"`
+	Window int `json:"window"`
 }
 
 type dsnData struct {
@@ -135,32 +142,90 @@ func (c *Client) DeleteProject(ctx context.Context, org, slug string) error {
 	return checkResponse(resp)
 }
 
-// GetProjectDSN returns the public DSN for the first client key of the project.
-func (c *Client) GetProjectDSN(ctx context.Context, org, slug string) (string, error) {
+// ListKeys returns all DSN keys for a project.
+func (c *Client) ListKeys(ctx context.Context, org, slug string) ([]DSNKey, error) {
 	url := fmt.Sprintf("%s/api/0/projects/%s/%s/keys/", c.baseURL, org, slug)
 	req, err := c.newRequest(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("GET project keys: %w", err)
+		return nil, fmt.Errorf("GET project keys: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if err := checkResponse(resp); err != nil {
-		return "", err
+		return nil, err
 	}
 
 	var keys []DSNKey
 	if err := json.NewDecoder(resp.Body).Decode(&keys); err != nil {
-		return "", fmt.Errorf("decode keys: %w", err)
+		return nil, fmt.Errorf("decode keys: %w", err)
+	}
+	return keys, nil
+}
+
+// GetProjectDSN returns the public DSN for the first client key of the project.
+func (c *Client) GetProjectDSN(ctx context.Context, org, slug string) (string, error) {
+	keys, err := c.ListKeys(ctx, org, slug)
+	if err != nil {
+		return "", err
 	}
 	if len(keys) == 0 {
 		return "", fmt.Errorf("project %s/%s has no DSN keys", org, slug)
 	}
 	return keys[0].DSN.Public, nil
+}
+
+// CreateKey creates a new DSN key with the given label for a project.
+func (c *Client) CreateKey(ctx context.Context, org, slug, name string) (*DSNKey, error) {
+	url := fmt.Sprintf("%s/api/0/projects/%s/%s/keys/", c.baseURL, org, slug)
+	req, err := c.newRequest(ctx, http.MethodPost, url, map[string]string{"name": name})
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("POST project key: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if err := checkResponse(resp); err != nil {
+		return nil, err
+	}
+
+	var key DSNKey
+	if err := json.NewDecoder(resp.Body).Decode(&key); err != nil {
+		return nil, fmt.Errorf("decode created key: %w", err)
+	}
+	return &key, nil
+}
+
+// UpdateKeyRateLimit sets the rate limit on an existing DSN key.
+// Set count and window to 0 to remove the rate limit.
+func (c *Client) UpdateKeyRateLimit(ctx context.Context, org, slug, keyID string, count, window int) error {
+	url := fmt.Sprintf("%s/api/0/projects/%s/%s/keys/%s/", c.baseURL, org, slug, keyID)
+	body := map[string]interface{}{
+		"rateLimit": map[string]int{
+			"count":  count,
+			"window": window,
+		},
+	}
+	req, err := c.newRequest(ctx, http.MethodPut, url, body)
+	if err != nil {
+		return err
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("PUT key rate limit: %w", err)
+	}
+	defer resp.Body.Close()
+
+	return checkResponse(resp)
 }
 
 func (c *Client) newRequest(ctx context.Context, method, url string, body interface{}) (*http.Request, error) {

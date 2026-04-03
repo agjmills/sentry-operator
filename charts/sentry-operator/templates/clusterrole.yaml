@@ -6,13 +6,13 @@ metadata:
     {{- include "sentry-operator.labels" . | nindent 4 }}
 rules:
   - apiGroups: ["sentry-operator.io"]
-    resources: ["sentryprojects"]
+    resources: ["sentryprojects", "sentryprojectrefs"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   - apiGroups: ["sentry-operator.io"]
-    resources: ["sentryprojects/status"]
+    resources: ["sentryprojects/status", "sentryprojectrefs/status"]
     verbs: ["get", "update", "patch"]
   - apiGroups: ["sentry-operator.io"]
-    resources: ["sentryprojects/finalizers"]
+    resources: ["sentryprojects/finalizers", "sentryprojectrefs/finalizers"]
     verbs: ["update"]
   - apiGroups: [""]
     resources: ["secrets"]

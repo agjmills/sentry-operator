@@ -78,6 +78,52 @@ spec:
                     resource is deleted. Defaults to true (project is retained).
                     Set to false to cascade-delete the Sentry project.
                   type: boolean
+                keys:
+                  description: >
+                    Keys defines the Sentry DSN keys to create and manage for this project.
+                    If empty, the first existing key is used and written as SENTRY_DSN.
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        description: Name is the label given to this key in Sentry.
+                        type: string
+                      secretKey:
+                        description: >
+                          SecretKey is the key name written into the Kubernetes Secret.
+                          Defaults to "SENTRY_DSN" for the first key, "SENTRY_DSN_<NAME>" for subsequent ones.
+                        type: string
+                      rateLimit:
+                        description: RateLimit configures the inbound event rate limit for this key.
+                        type: object
+                        properties:
+                          count:
+                            type: integer
+                            minimum: 1
+                          window:
+                            type: integer
+                            minimum: 1
+                            default: 3600
+                        required:
+                          - count
+                          - window
+                    required:
+                      - name
+                defaultRateLimit:
+                  description: DefaultRateLimit applies to all keys that do not have their own rateLimit set.
+                  type: object
+                  properties:
+                    count:
+                      type: integer
+                      minimum: 1
+                    window:
+                      type: integer
+                      minimum: 1
+                      default: 3600
+                  required:
+                    - count
+                    - window
                 secretKeys:
                   description: SecretKeys controls the key names written into the output Secret.
                   properties:

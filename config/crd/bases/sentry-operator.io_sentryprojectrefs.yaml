@@ -4,16 +4,16 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.16.0
-  name: sentryprojects.sentry-operator.io
+  name: sentryprojectrefs.sentry-operator.io
 spec:
   group: sentry-operator.io
   names:
-    kind: SentryProject
-    listKind: SentryProjectList
-    plural: sentryprojects
+    kind: SentryProjectRef
+    listKind: SentryProjectRefList
+    plural: sentryprojectrefs
     shortNames:
-      - sp
-    singular: sentryproject
+      - spr
+    singular: sentryprojectref
   scope: Namespaced
   versions:
     - additionalPrinterColumns:
@@ -33,9 +33,9 @@ spec:
       schema:
         openAPIV3Schema:
           description: >
-            SentryProject is the Schema for the sentryprojects API.
-            Creating a SentryProject causes the operator to provision a project in Sentry
-            and write a Secret containing SENTRY_DSN into the same namespace.
+            SentryProjectRef references an existing Sentry project and writes its DSN
+            into a Kubernetes Secret. Unlike SentryProject, it never creates or deletes
+            the Sentry project itself.
           properties:
             apiVersion:
               type: string
@@ -44,50 +44,33 @@ spec:
             metadata:
               type: object
             spec:
-              description: SentryProjectSpec defines the desired state of a SentryProject.
+              description: SentryProjectRefSpec defines the desired state of a SentryProjectRef.
               properties:
                 organization:
                   description: >
                     Organization is the Sentry organization slug.
                     Falls back to the operator's --default-organization flag if unset.
                   type: string
-                team:
-                  description: >
-                    Team is the Sentry team slug that owns this project.
-                    Falls back to the operator's --default-team flag if unset.
-                  type: string
-                platform:
-                  description: >
-                    Platform is the Sentry platform identifier (e.g. "go", "python-django", "javascript").
-                    Falls back to the operator's --default-platform flag if unset.
-                  type: string
                 projectSlug:
-                  description: >
-                    ProjectSlug overrides the Sentry project slug.
-                    Defaults to the resource's metadata.name.
+                  description: ProjectSlug is the slug of the existing Sentry project to reference.
                   type: string
                 secretName:
                   description: >
                     SecretName is the name of the Kubernetes Secret created in this namespace.
                     Defaults to "<metadata.name>-sentry".
                   type: string
-                retainOnDelete:
-                  default: true
-                  description: >
-                    RetainOnDelete controls whether the Sentry project is deleted when this
-                    resource is deleted. Defaults to true (project is retained).
-                    Set to false to cascade-delete the Sentry project.
-                  type: boolean
                 keys:
                   description: >
-                    Keys defines the Sentry DSN keys to create and manage for this project.
+                    Keys defines the Sentry DSN keys to fetch for this project.
+                    Keys are not created — they must already exist in Sentry.
                     If empty, the first existing key is used and written as SENTRY_DSN.
                   type: array
                   items:
+                    $ref: '#/components/schemas/KeySpec'
                     type: object
                     properties:
                       name:
-                        description: Name is the label given to this key in Sentry.
+                        description: Name is the label of the Sentry key to reference.
                         type: string
                       secretKey:
                         description: >
@@ -110,6 +93,19 @@ spec:
                           - window
                     required:
                       - name
+                secretKeys:
+                  description: SecretKeys controls the key names written into the output Secret (single-key fallback mode).
+                  type: object
+                  properties:
+                    dsn:
+                      default: SENTRY_DSN
+                      type: string
+                    environment:
+                      default: SENTRY_ENVIRONMENT
+                      type: string
+                    release:
+                      default: SENTRY_RELEASE
+                      type: string
                 defaultRateLimit:
                   description: DefaultRateLimit applies to all keys that do not have their own rateLimit set.
                   type: object
@@ -124,29 +120,14 @@ spec:
                   required:
                     - count
                     - window
-                secretKeys:
-                  description: SecretKeys controls the key names written into the output Secret.
-                  properties:
-                    dsn:
-                      default: SENTRY_DSN
-                      description: DSN is the key name for the Sentry DSN value. Defaults to "SENTRY_DSN".
-                      type: string
-                    environment:
-                      default: SENTRY_ENVIRONMENT
-                      description: Environment is the key name for the Sentry environment annotation. Defaults to "SENTRY_ENVIRONMENT".
-                      type: string
-                    release:
-                      default: SENTRY_RELEASE
-                      description: Release is the key name for the Sentry release annotation. Defaults to "SENTRY_RELEASE".
-                      type: string
-                  type: object
+              required:
+                - projectSlug
               type: object
             status:
-              description: SentryProjectStatus defines the observed state of a SentryProject.
+              description: SentryProjectRefStatus defines the observed state of a SentryProjectRef.
               properties:
                 conditions:
                   items:
-                    description: Condition contains details for one aspect of the current state of this API resource.
                     properties:
                       lastTransitionTime:
                         format: date-time
@@ -185,18 +166,14 @@ spec:
                     - type
                   x-kubernetes-list-type: map
                 lastSyncTime:
-                  description: LastSyncTime is the timestamp of the last successful reconciliation.
                   format: date-time
                   type: string
                 observedGeneration:
-                  description: ObservedGeneration is the generation last processed by the controller.
                   format: int64
                   type: integer
                 projectSlug:
-                  description: ProjectSlug is the slug of the provisioned Sentry project.
                   type: string
                 secretName:
-                  description: SecretName is the name of the Kubernetes Secret that was created.
                   type: string
               type: object
           type: object

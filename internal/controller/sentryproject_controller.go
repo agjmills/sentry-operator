@@ -58,12 +58,10 @@ func (r *SentryProjectReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, err
 	}
 
-	// Handle deletion.
 	if !sp.DeletionTimestamp.IsZero() {
 		return r.handleDeletion(ctx, &sp)
 	}
 
-	// Ensure our finalizer is present.
 	if !controllerutil.ContainsFinalizer(&sp, finalizerName) {
 		controllerutil.AddFinalizer(&sp, finalizerName)
 		if err := r.Update(ctx, &sp); err != nil {
@@ -84,7 +82,6 @@ func (r *SentryProjectReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 	logger.Info("reconciling SentryProject", "org", org, "team", team, "slug", projectSlug)
 
-	// Ensure the Sentry project exists.
 	project, err := r.SentryClient.GetProject(ctx, org, projectSlug)
 	if err != nil {
 		return r.setFailed(ctx, &sp, fmt.Sprintf("get project: %v", err))
@@ -99,16 +96,11 @@ func (r *SentryProjectReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		logger.Info("project created", "slug", project.Slug)
 	}
 
-	// Fetch the DSN.
-	dsn, err := r.SentryClient.GetProjectDSN(ctx, org, project.Slug)
+	secretData, err := reconcileKeys(ctx, r.SentryClient, org, project.Slug, sp.Spec.Keys, sp.Spec.DefaultRateLimit, true)
 	if err != nil {
-		return r.setFailed(ctx, &sp, fmt.Sprintf("get DSN: %v", err))
+		return r.setFailed(ctx, &sp, fmt.Sprintf("reconcile keys: %v", err))
 	}
 
-	// Build the Secret data.
-	secretData := r.buildSecretData(&sp, dsn)
-
-	// Create or update the Secret.
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      secretName,
@@ -124,13 +116,12 @@ func (r *SentryProjectReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 	logger.Info("secret synced", "name", secretName, "result", result)
 
-	// Update status.
 	now := metav1.Now()
 	sp.Status.ProjectSlug = project.Slug
 	sp.Status.SecretName = secretName
 	sp.Status.LastSyncTime = &now
 	sp.Status.ObservedGeneration = sp.Generation
-	setCondition(&sp, sentryv1alpha1.ConditionReady, metav1.ConditionTrue,
+	setCondition(&sp.Status.Conditions, sp.Generation, sentryv1alpha1.ConditionReady, metav1.ConditionTrue,
 		sentryv1alpha1.ReasonProjectProvisioned, "Sentry project provisioned and secret synced")
 
 	if err := r.Status().Update(ctx, &sp); err != nil {
@@ -166,8 +157,6 @@ func (r *SentryProjectReconciler) handleDeletion(ctx context.Context, sp *sentry
 		logger.Info("retaining Sentry project on delete (retainOnDelete=true)")
 	}
 
-	// Delete the owned Secret explicitly (owner reference would handle GC, but
-	// this ensures immediate cleanup rather than waiting for GC).
 	secretName := coalesce(sp.Spec.SecretName, sp.Name+"-sentry")
 	secret := &corev1.Secret{}
 	err := r.Get(ctx, types.NamespacedName{Name: secretName, Namespace: sp.Namespace}, secret)
@@ -184,17 +173,9 @@ func (r *SentryProjectReconciler) handleDeletion(ctx context.Context, sp *sentry
 	return ctrl.Result{}, nil
 }
 
-func (r *SentryProjectReconciler) buildSecretData(sp *sentryv1alpha1.SentryProject, dsn string) map[string]string {
-	keys := resolvedKeys(sp.Spec.SecretKeys)
-	data := map[string]string{
-		keys.DSN: dsn,
-	}
-	return data
-}
-
 func (r *SentryProjectReconciler) setFailed(ctx context.Context, sp *sentryv1alpha1.SentryProject, msg string) (ctrl.Result, error) {
 	log.FromContext(ctx).Error(errors.New(msg), "reconcile failed")
-	setCondition(sp, sentryv1alpha1.ConditionReady, metav1.ConditionFalse,
+	setCondition(&sp.Status.Conditions, sp.Generation, sentryv1alpha1.ConditionReady, metav1.ConditionFalse,
 		sentryv1alpha1.ReasonProvisionFailed, msg)
 	_ = r.Status().Update(ctx, sp)
 	return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
@@ -207,48 +188,28 @@ func (r *SentryProjectReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-// resolvedKeys returns the effective secret key names, applying defaults.
-func resolvedKeys(spec *sentryv1alpha1.SecretKeysSpec) sentryv1alpha1.SecretKeysSpec {
-	defaults := sentryv1alpha1.SecretKeysSpec{
-		DSN:         "SENTRY_DSN",
-		Environment: "SENTRY_ENVIRONMENT",
-		Release:     "SENTRY_RELEASE",
-	}
-	if spec == nil {
-		return defaults
-	}
-	if spec.DSN != "" {
-		defaults.DSN = spec.DSN
-	}
-	if spec.Environment != "" {
-		defaults.Environment = spec.Environment
-	}
-	if spec.Release != "" {
-		defaults.Release = spec.Release
-	}
-	return defaults
-}
-
-func setCondition(sp *sentryv1alpha1.SentryProject, condType string, status metav1.ConditionStatus, reason, message string) {
+// setCondition upserts a condition into a conditions slice.
+func setCondition(conditions *[]metav1.Condition, generation int64, condType string, status metav1.ConditionStatus, reason, message string) {
 	now := metav1.Now()
-	for i, c := range sp.Status.Conditions {
+	for i, c := range *conditions {
 		if c.Type == condType {
 			if c.Status != status || c.Reason != reason {
-				sp.Status.Conditions[i].Status = status
-				sp.Status.Conditions[i].Reason = reason
-				sp.Status.Conditions[i].Message = message
-				sp.Status.Conditions[i].LastTransitionTime = now
+				(*conditions)[i].Status = status
+				(*conditions)[i].Reason = reason
+				(*conditions)[i].Message = message
+				(*conditions)[i].LastTransitionTime = now
+				(*conditions)[i].ObservedGeneration = generation
 			}
 			return
 		}
 	}
-	sp.Status.Conditions = append(sp.Status.Conditions, metav1.Condition{
+	*conditions = append(*conditions, metav1.Condition{
 		Type:               condType,
 		Status:             status,
 		Reason:             reason,
 		Message:            message,
 		LastTransitionTime: now,
-		ObservedGeneration: sp.Generation,
+		ObservedGeneration: generation,
 	})
 }
 

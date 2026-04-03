@@ -84,6 +84,23 @@ func main() {
 
 	sentryClient := sentry.NewClient(sentryURL, token)
 
+	if err = (&controller.SentryProjectRefReconciler{
+		Client:       mgr.GetClient(),
+		Scheme:       mgr.GetScheme(),
+		SentryClient: sentryClient,
+		Config: controller.Config{
+			DefaultOrganization:   defaultOrganization,
+			DefaultTeam:           defaultTeam,
+			DefaultPlatform:       defaultPlatform,
+			DefaultRetainOnDelete: defaultRetainOnDel,
+			SentryURL:             sentryURL,
+			RequeueInterval:       requeueInterval,
+		},
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "SentryProjectRef")
+		os.Exit(1)
+	}
+
 	if err = (&controller.SentryProjectReconciler{
 		Client:       mgr.GetClient(),
 		Scheme:       mgr.GetScheme(),

@@ -4,6 +4,34 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// RateLimitSpec configures the inbound event rate limit for a Sentry DSN key.
+type RateLimitSpec struct {
+	// Count is the maximum number of events allowed per window.
+	// +kubebuilder:validation:Minimum=1
+	Count int `json:"count"`
+
+	// Window is the rate limit window in seconds.
+	// +kubebuilder:default=3600
+	// +kubebuilder:validation:Minimum=1
+	Window int `json:"window"`
+}
+
+// KeySpec defines a Sentry DSN key to create or manage.
+type KeySpec struct {
+	// Name is the label given to this key in Sentry.
+	Name string `json:"name"`
+
+	// SecretKey is the key name written into the Kubernetes Secret.
+	// Defaults to "SENTRY_DSN" for the first key, "SENTRY_DSN_<NAME>" for subsequent ones.
+	// +optional
+	SecretKey string `json:"secretKey,omitempty"`
+
+	// RateLimit configures the inbound event rate limit for this key.
+	// Overrides spec.defaultRateLimit if set.
+	// +optional
+	RateLimit *RateLimitSpec `json:"rateLimit,omitempty"`
+}
+
 // SentryProjectSpec defines the desired state of a SentryProject.
 type SentryProjectSpec struct {
 	// Organization is the Sentry organization slug.
@@ -39,9 +67,23 @@ type SentryProjectSpec struct {
 	// +kubebuilder:default=true
 	RetainOnDelete *bool `json:"retainOnDelete,omitempty"`
 
-	// SecretKeys controls which keys are written into the output Secret.
+	// SecretKeys controls the key names written into the output Secret.
+	// Only applies when spec.keys is empty (single-key fallback mode).
 	// +optional
 	SecretKeys *SecretKeysSpec `json:"secretKeys,omitempty"`
+
+	// Keys defines the Sentry DSN keys to create and manage for this project.
+	// Each key is created in Sentry if it does not exist, and its DSN is written
+	// into the output Secret under the configured key name.
+	// If empty, the first existing key is used and written as SENTRY_DSN.
+	// +optional
+	// +listType=atomic
+	Keys []KeySpec `json:"keys,omitempty"`
+
+	// DefaultRateLimit applies to all keys in spec.keys that do not have their
+	// own rateLimit set.
+	// +optional
+	DefaultRateLimit *RateLimitSpec `json:"defaultRateLimit,omitempty"`
 }
 
 // SecretKeysSpec configures the key names written into the output Secret.
