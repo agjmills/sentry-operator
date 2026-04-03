@@ -110,6 +110,20 @@ type SecretKeysSpec struct {
 	Release string `json:"release,omitempty"`
 }
 
+// KeyStatus records the Sentry key ID for a managed DSN key.
+// This allows the operator to match keys by ID rather than label on subsequent
+// reconciles, so externally renamed keys are adopted rather than duplicated.
+type KeyStatus struct {
+	// Name is the key label as specified in spec.keys.
+	Name string `json:"name"`
+
+	// ID is the Sentry key ID.
+	ID string `json:"id"`
+
+	// SecretKey is the key name written into the Kubernetes Secret.
+	SecretKey string `json:"secretKey"`
+}
+
 // SentryProjectStatus defines the observed state of a SentryProject.
 type SentryProjectStatus struct {
 	// Conditions represent the latest available observations of the resource's state.
@@ -125,6 +139,12 @@ type SentryProjectStatus struct {
 	// SecretName is the name of the Kubernetes Secret that was created.
 	// +optional
 	SecretName string `json:"secretName,omitempty"`
+
+	// Keys tracks the Sentry key IDs for each managed DSN key.
+	// Used to match keys by ID on subsequent reconciles, surviving label renames.
+	// +optional
+	// +listType=atomic
+	Keys []KeyStatus `json:"keys,omitempty"`
 
 	// LastSyncTime is the timestamp of the last successful reconciliation.
 	// +optional

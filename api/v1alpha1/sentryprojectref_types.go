@@ -56,6 +56,12 @@ type SentryProjectRefStatus struct {
 	// +optional
 	SecretName string `json:"secretName,omitempty"`
 
+	// Keys tracks the Sentry key IDs for each managed DSN key.
+	// Used to match keys by ID on subsequent reconciles, surviving label renames.
+	// +optional
+	// +listType=atomic
+	Keys []KeyStatus `json:"keys,omitempty"`
+
 	// LastSyncTime is the timestamp of the last successful reconciliation.
 	// +optional
 	LastSyncTime *metav1.Time `json:"lastSyncTime,omitempty"`

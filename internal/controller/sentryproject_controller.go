@@ -96,7 +96,7 @@ func (r *SentryProjectReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		logger.Info("project created", "slug", project.Slug)
 	}
 
-	secretData, err := reconcileKeys(ctx, r.SentryClient, org, project.Slug, sp.Spec.Keys, sp.Spec.DefaultRateLimit, true)
+	secretData, keyStatuses, err := reconcileKeys(ctx, r.SentryClient, org, project.Slug, sp.Spec.Keys, sp.Spec.DefaultRateLimit, sp.Status.Keys, true)
 	if err != nil {
 		return r.setFailed(ctx, &sp, fmt.Sprintf("reconcile keys: %v", err))
 	}
@@ -120,6 +120,7 @@ func (r *SentryProjectReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	now := metav1.Now()
 	sp.Status.ProjectSlug = project.Slug
 	sp.Status.SecretName = secretName
+	sp.Status.Keys = keyStatuses
 	sp.Status.LastSyncTime = &now
 	sp.Status.ObservedGeneration = sp.Generation
 	setCondition(&sp.Status.Conditions, sp.Generation, sentryv1alpha1.ConditionReady, metav1.ConditionTrue,

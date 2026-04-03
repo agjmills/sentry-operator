@@ -34,7 +34,7 @@ func TestReconcileKeys_Fallback(t *testing.T) {
 		})
 	})
 
-	data, err := reconcileKeys(context.Background(), client, "org", "slug", nil, nil, true)
+	data, _, err := reconcileKeys(context.Background(), client, "org", "slug", nil, nil, nil, true)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -49,7 +49,7 @@ func TestReconcileKeys_Fallback_NoKeys(t *testing.T) {
 		json.NewEncoder(w).Encode([]interface{}{})
 	})
 
-	_, err := reconcileKeys(context.Background(), client, "org", "slug", nil, nil, true)
+	_, _, err := reconcileKeys(context.Background(), client, "org", "slug", nil, nil, nil, true)
 	if err == nil {
 		t.Fatal("expected error when no keys exist, got nil")
 	}
@@ -71,7 +71,7 @@ func TestReconcileKeys_ExistingKeys(t *testing.T) {
 		{Name: "frontend"},
 	}
 
-	data, err := reconcileKeys(context.Background(), client, "org", "slug", specs, nil, true)
+	data, statuses, err := reconcileKeys(context.Background(), client, "org", "slug", specs, nil, nil, true)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -80,6 +80,9 @@ func TestReconcileKeys_ExistingKeys(t *testing.T) {
 	}
 	if data["SENTRY_DSN_FRONTEND"] != "https://def@sentry.io/2" {
 		t.Errorf("unexpected second DSN: %s", data["SENTRY_DSN_FRONTEND"])
+	}
+	if len(statuses) != 2 || statuses[0].ID != "k1" || statuses[1].ID != "k2" {
+		t.Errorf("unexpected statuses: %+v", statuses)
 	}
 }
 
@@ -97,7 +100,7 @@ func TestReconcileKeys_CustomSecretKey(t *testing.T) {
 		{Name: "mykey", SecretKey: "MY_CUSTOM_DSN"},
 	}
 
-	data, err := reconcileKeys(context.Background(), client, "org", "slug", specs, nil, true)
+	data, _, err := reconcileKeys(context.Background(), client, "org", "slug", specs, nil, nil, true)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -111,7 +114,7 @@ func TestReconcileKeys_CreatesMissingKey(t *testing.T) {
 	client := newKeysTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		if r.Method == http.MethodGet {
-			json.NewEncoder(w).Encode([]interface{}{}) // no existing keys
+			json.NewEncoder(w).Encode([]interface{}{})
 		} else if r.Method == http.MethodPost {
 			created = true
 			w.WriteHeader(http.StatusCreated)
@@ -120,7 +123,7 @@ func TestReconcileKeys_CreatesMissingKey(t *testing.T) {
 	})
 
 	specs := []sentryv1alpha1.KeySpec{{Name: "newkey"}}
-	data, err := reconcileKeys(context.Background(), client, "org", "slug", specs, nil, true)
+	data, _, err := reconcileKeys(context.Background(), client, "org", "slug", specs, nil, nil, true)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -135,11 +138,11 @@ func TestReconcileKeys_CreatesMissingKey(t *testing.T) {
 func TestReconcileKeys_RefusesMissingKey(t *testing.T) {
 	client := newKeysTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode([]interface{}{}) // no existing keys
+		json.NewEncoder(w).Encode([]interface{}{})
 	})
 
 	specs := []sentryv1alpha1.KeySpec{{Name: "missing"}}
-	_, err := reconcileKeys(context.Background(), client, "org", "slug", specs, nil, false)
+	_, _, err := reconcileKeys(context.Background(), client, "org", "slug", specs, nil, nil, false)
 	if err == nil {
 		t.Fatal("expected error when createMissing=false and key not found")
 	}
@@ -163,7 +166,7 @@ func TestReconcileKeys_DefaultRateLimit(t *testing.T) {
 	defaultRL := &sentryv1alpha1.RateLimitSpec{Count: 500, Window: 3600}
 	specs := []sentryv1alpha1.KeySpec{{Name: "mykey"}}
 
-	_, err := reconcileKeys(context.Background(), client, "org", "slug", specs, defaultRL, true)
+	_, _, err := reconcileKeys(context.Background(), client, "org", "slug", specs, defaultRL, nil, true)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -191,12 +194,43 @@ func TestReconcileKeys_PerKeyRateLimitOverridesDefault(t *testing.T) {
 	perKeyRL := &sentryv1alpha1.RateLimitSpec{Count: 100, Window: 60}
 	specs := []sentryv1alpha1.KeySpec{{Name: "mykey", RateLimit: perKeyRL}}
 
-	_, err := reconcileKeys(context.Background(), client, "org", "slug", specs, defaultRL, true)
+	_, _, err := reconcileKeys(context.Background(), client, "org", "slug", specs, defaultRL, nil, true)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	rl := putBody["rateLimit"].(map[string]interface{})
 	if rl["count"].(float64) != 100 {
 		t.Errorf("expected per-key count 100, got %v", rl["count"])
+	}
+}
+
+func TestReconcileKeys_AdoptsRenamedKeyByID(t *testing.T) {
+	// Simulate a key that was renamed in the Sentry UI from "backend" to "backend-renamed".
+	// The operator should match by ID (from previous status) rather than creating a duplicate.
+	client := newKeysTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			w.Header().Set("Content-Type", "application/json")
+			// The key now has label "backend-renamed" in Sentry but same ID.
+			json.NewEncoder(w).Encode([]interface{}{
+				makeKey("k1", "backend-renamed", "https://abc@sentry.io/1"),
+			})
+		} else if r.Method == http.MethodPost {
+			t.Error("should not create a new key — existing key should be adopted by ID")
+		}
+	})
+
+	specs := []sentryv1alpha1.KeySpec{{Name: "backend"}}
+
+	// Previous status records the key ID from when the key was originally named "backend".
+	prevStatuses := []sentryv1alpha1.KeyStatus{
+		{Name: "backend", ID: "k1", SecretKey: "SENTRY_DSN"},
+	}
+
+	data, _, err := reconcileKeys(context.Background(), client, "org", "slug", specs, nil, prevStatuses, true)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if data["SENTRY_DSN"] != "https://abc@sentry.io/1" {
+		t.Errorf("unexpected DSN: %s", data["SENTRY_DSN"])
 	}
 }

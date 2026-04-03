@@ -74,7 +74,7 @@ func (r *SentryProjectRefReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	// createMissing=false: we only read existing keys, never create them.
-	secretData, err := reconcileKeys(ctx, r.SentryClient, org, project.Slug, ref.Spec.Keys, ref.Spec.DefaultRateLimit, false)
+	secretData, keyStatuses, err := reconcileKeys(ctx, r.SentryClient, org, project.Slug, ref.Spec.Keys, ref.Spec.DefaultRateLimit, ref.Status.Keys, false)
 	if err != nil {
 		return r.setFailed(ctx, &ref, fmt.Sprintf("reconcile keys: %v", err))
 	}
@@ -98,6 +98,7 @@ func (r *SentryProjectRefReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	now := metav1.Now()
 	ref.Status.ProjectSlug = project.Slug
 	ref.Status.SecretName = secretName
+	ref.Status.Keys = keyStatuses
 	ref.Status.LastSyncTime = &now
 	ref.Status.ObservedGeneration = ref.Generation
 	setCondition(&ref.Status.Conditions, ref.Generation, sentryv1alpha1.ConditionReady, metav1.ConditionTrue,
