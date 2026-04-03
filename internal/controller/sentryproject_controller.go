@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -192,7 +193,7 @@ func (r *SentryProjectReconciler) buildSecretData(sp *sentryv1alpha1.SentryProje
 }
 
 func (r *SentryProjectReconciler) setFailed(ctx context.Context, sp *sentryv1alpha1.SentryProject, msg string) (ctrl.Result, error) {
-	log.FromContext(ctx).Error(fmt.Errorf(msg), "reconcile failed")
+	log.FromContext(ctx).Error(errors.New(msg), "reconcile failed")
 	setCondition(sp, sentryv1alpha1.ConditionReady, metav1.ConditionFalse,
 		sentryv1alpha1.ReasonProvisionFailed, msg)
 	_ = r.Status().Update(ctx, sp)
