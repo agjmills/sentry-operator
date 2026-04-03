@@ -7,11 +7,19 @@ appVersion: "0.1.0"
 keywords:
   - sentry
   - operator
+  - kubernetes
   - monitoring
   - error-tracking
+  - dsn
 home: https://github.com/agjmills/sentry-operator
 sources:
   - https://github.com/agjmills/sentry-operator
 maintainers:
   - name: agjmills
     url: https://github.com/agjmills
+annotations:
+  artifacthub.io/license: Apache-2.0
+  artifacthub.io/operator: "true"
+  artifacthub.io/operatorCapabilities: Basic Install
+  artifacthub.io/summary: Automatically provision Sentry projects and inject DSNs as Kubernetes Secrets.
+  artifacthub.io/category: monitoring-logging

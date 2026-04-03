@@ -1,5 +1,10 @@
 # sentry-operator
 
+[![CI](https://github.com/agjmills/sentry-operator/actions/workflows/ci.yaml/badge.svg)](https://github.com/agjmills/sentry-operator/actions/workflows/ci.yaml)
+[![Release](https://img.shields.io/github/v/release/agjmills/sentry-operator)](https://github.com/agjmills/sentry-operator/releases)
+[![License](https://img.shields.io/github/license/agjmills/sentry-operator)](LICENSE)
+[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/sentry-operator)](https://artifacthub.io/packages/helm/sentry-operator/sentry-operator)
+
 A Kubernetes operator that automatically provisions [Sentry](https://sentry.io) projects and injects DSNs as Kubernetes Secrets.
 
 Instead of manually creating Sentry projects and copy-pasting DSNs into your manifests, you declare a `SentryProject` resource alongside your app. The operator provisions the project in Sentry, fetches the DSN, and writes it into a Secret in the same namespace — ready to be mounted as an environment variable.
