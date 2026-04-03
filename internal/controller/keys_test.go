@@ -184,7 +184,9 @@ func TestReconcileKeys_PerKeyRateLimitOverridesDefault(t *testing.T) {
 				makeKey("k1", "mykey", "https://abc@sentry.io/1"),
 			})
 		} else if r.Method == http.MethodPut {
-			json.NewDecoder(r.Body).Decode(&putBody)
+			if err := json.NewDecoder(r.Body).Decode(&putBody); err != nil {
+				t.Errorf("decode PUT body: %v", err)
+			}
 			w.WriteHeader(http.StatusOK)
 			json.NewEncoder(w).Encode(map[string]interface{}{})
 		}

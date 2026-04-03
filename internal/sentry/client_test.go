@@ -17,13 +17,20 @@ func newTestServer(t *testing.T, handler http.HandlerFunc) (*httptest.Server, *s
 	return srv, sentry.NewClient(srv.URL, "test-token")
 }
 
+func encode(t *testing.T, w http.ResponseWriter, v interface{}) {
+	t.Helper()
+	if err := json.NewEncoder(w).Encode(v); err != nil {
+		t.Errorf("encode response: %v", err)
+	}
+}
+
 func TestGetProject_Found(t *testing.T) {
 	srv, client := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			t.Errorf("expected GET, got %s", r.Method)
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"id": "1", "slug": "myapp", "name": "myapp"})
+		encode(t, w, map[string]string{"id": "1", "slug": "myapp", "name": "myapp"})
 	})
 	_ = srv
 
@@ -40,7 +47,7 @@ func TestGetProject_Found(t *testing.T) {
 }
 
 func TestGetProject_NotFound(t *testing.T) {
-	srv, client := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+	srv, client := newTestServer(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	})
 	_ = srv
@@ -61,7 +68,7 @@ func TestCreateProject(t *testing.T) {
 		}
 		w.WriteHeader(http.StatusCreated)
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"id": "2", "slug": "newapp", "name": "newapp"})
+		encode(t, w, map[string]string{"id": "2", "slug": "newapp", "name": "newapp"})
 	})
 	_ = srv
 
@@ -75,9 +82,9 @@ func TestCreateProject(t *testing.T) {
 }
 
 func TestListKeys(t *testing.T) {
-	srv, client := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+	srv, client := newTestServer(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode([]map[string]interface{}{
+		encode(t, w, []map[string]interface{}{
 			{"id": "k1", "label": "Default", "dsn": map[string]string{"public": "https://abc@o1.ingest.sentry.io/1"}},
 			{"id": "k2", "label": "backend", "dsn": map[string]string{"public": "https://def@o1.ingest.sentry.io/2"}},
 		})
@@ -103,7 +110,7 @@ func TestCreateKey(t *testing.T) {
 		}
 		w.WriteHeader(http.StatusCreated)
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		encode(t, w, map[string]interface{}{
 			"id":    "k3",
 			"label": "frontend",
 			"dsn":   map[string]string{"public": "https://ghi@o1.ingest.sentry.io/3"},
@@ -128,7 +135,7 @@ func TestUpdateKeyRateLimit(t *testing.T) {
 		}
 		called = true
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{})
+		encode(t, w, map[string]interface{}{})
 	})
 	_ = srv
 
@@ -156,21 +163,20 @@ func TestDeleteProject(t *testing.T) {
 }
 
 func TestDeleteProject_AlreadyGone(t *testing.T) {
-	srv, client := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+	srv, client := newTestServer(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	})
 	_ = srv
 
-	// 404 on delete should not be an error.
 	if err := client.DeleteProject(context.Background(), "my-org", "gone"); err != nil {
 		t.Fatalf("unexpected error on 404: %v", err)
 	}
 }
 
 func TestAPIError(t *testing.T) {
-	srv, client := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+	srv, client := newTestServer(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"detail":"Authentication credentials were not provided."}`))
+		_, _ = w.Write([]byte(`{"detail":"Authentication credentials were not provided."}`))
 	})
 	_ = srv
 
