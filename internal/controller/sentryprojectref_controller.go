@@ -87,6 +87,7 @@ func (r *SentryProjectRefReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 	result, err := controllerutil.CreateOrUpdate(ctx, r.Client, secret, func() error {
 		secret.StringData = secretData
+		setManagedLabels(secret)
 		return controllerutil.SetControllerReference(&ref, secret, r.Scheme)
 	})
 	if err != nil {

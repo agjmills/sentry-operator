@@ -109,6 +109,7 @@ func (r *SentryProjectReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 	result, err := controllerutil.CreateOrUpdate(ctx, r.Client, secret, func() error {
 		secret.StringData = secretData
+		setManagedLabels(secret)
 		return controllerutil.SetControllerReference(&sp, secret, r.Scheme)
 	})
 	if err != nil {
@@ -211,6 +212,14 @@ func setCondition(conditions *[]metav1.Condition, generation int64, condType str
 		LastTransitionTime: now,
 		ObservedGeneration: generation,
 	})
+}
+
+// setManagedLabels ensures the Secret is labelled as managed by the operator.
+func setManagedLabels(secret *corev1.Secret) {
+	if secret.Labels == nil {
+		secret.Labels = make(map[string]string)
+	}
+	secret.Labels["app.kubernetes.io/managed-by"] = "sentry-operator"
 }
 
 func coalesce(vals ...string) string {
