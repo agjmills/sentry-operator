@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.3](https://github.com/agjmills/sentry-operator/compare/v1.2.2...v1.2.3) (2026-04-04)
+
+
+### Bug Fixes
+
+* use TARGETOS/TARGETARCH in Dockerfile.goreleaser for dockers_v2 build context ([4cdbfbb](https://github.com/agjmills/sentry-operator/commit/4cdbfbb6956d3300ca5a858f3e98569ac1d4cd3e))
+
 ## [1.2.2](https://github.com/agjmills/sentry-operator/compare/v1.2.1...v1.2.2) (2026-04-04)
 
 
