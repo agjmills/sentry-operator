@@ -86,6 +86,10 @@ ENVTEST ?= $(LOCALBIN)/setup-envtest
 envtest: $(LOCALBIN)
 	@test -s $(ENVTEST) || GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
 
+.PHONY: install-hooks
+install-hooks: ## Configure git to use .githooks/
+	git config core.hooksPath .githooks
+
 .PHONY: help
 help: ## Display this help
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n\nTargets:\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
