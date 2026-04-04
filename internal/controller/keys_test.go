@@ -18,6 +18,13 @@ func newKeysTestServer(t *testing.T, handler http.HandlerFunc) *sentry.Client {
 	return sentry.NewClient(srv.URL, "test-token")
 }
 
+func encode(t *testing.T, w http.ResponseWriter, v interface{}) {
+	t.Helper()
+	if err := json.NewEncoder(w).Encode(v); err != nil {
+		t.Errorf("encode response: %v", err)
+	}
+}
+
 func makeKey(id, label, dsn string) map[string]interface{} {
 	return map[string]interface{}{
 		"id":    id,
@@ -27,9 +34,9 @@ func makeKey(id, label, dsn string) map[string]interface{} {
 }
 
 func TestReconcileKeys_Fallback(t *testing.T) {
-	client := newKeysTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+	client := newKeysTestServer(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode([]interface{}{
+		encode(t, w, []interface{}{
 			makeKey("k1", "Default", "https://abc@sentry.io/1"),
 		})
 	})
@@ -44,9 +51,9 @@ func TestReconcileKeys_Fallback(t *testing.T) {
 }
 
 func TestReconcileKeys_Fallback_NoKeys(t *testing.T) {
-	client := newKeysTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+	client := newKeysTestServer(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode([]interface{}{})
+		encode(t, w, []interface{}{})
 	})
 
 	_, _, err := reconcileKeys(context.Background(), client, "org", "slug", nil, nil, nil, true)
@@ -59,7 +66,7 @@ func TestReconcileKeys_ExistingKeys(t *testing.T) {
 	client := newKeysTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode([]interface{}{
+			encode(t, w, []interface{}{
 				makeKey("k1", "backend", "https://abc@sentry.io/1"),
 				makeKey("k2", "frontend", "https://def@sentry.io/2"),
 			})
@@ -90,7 +97,7 @@ func TestReconcileKeys_CustomSecretKey(t *testing.T) {
 	client := newKeysTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode([]interface{}{
+			encode(t, w, []interface{}{
 				makeKey("k1", "mykey", "https://abc@sentry.io/1"),
 			})
 		}
@@ -114,11 +121,11 @@ func TestReconcileKeys_CreatesMissingKey(t *testing.T) {
 	client := newKeysTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		if r.Method == http.MethodGet {
-			json.NewEncoder(w).Encode([]interface{}{})
+			encode(t, w, []interface{}{})
 		} else if r.Method == http.MethodPost {
 			created = true
 			w.WriteHeader(http.StatusCreated)
-			json.NewEncoder(w).Encode(makeKey("k1", "newkey", "https://new@sentry.io/1"))
+			encode(t, w, makeKey("k1", "newkey", "https://new@sentry.io/1"))
 		}
 	})
 
@@ -136,9 +143,9 @@ func TestReconcileKeys_CreatesMissingKey(t *testing.T) {
 }
 
 func TestReconcileKeys_RefusesMissingKey(t *testing.T) {
-	client := newKeysTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+	client := newKeysTestServer(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode([]interface{}{})
+		encode(t, w, []interface{}{})
 	})
 
 	specs := []sentryv1alpha1.KeySpec{{Name: "missing"}}
@@ -153,13 +160,13 @@ func TestReconcileKeys_DefaultRateLimit(t *testing.T) {
 	client := newKeysTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		if r.Method == http.MethodGet {
-			json.NewEncoder(w).Encode([]interface{}{
+			encode(t, w, []interface{}{
 				makeKey("k1", "mykey", "https://abc@sentry.io/1"),
 			})
 		} else if r.Method == http.MethodPut {
 			rateLimitCalled = true
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{})
+			encode(t, w, map[string]interface{}{})
 		}
 	})
 
@@ -180,7 +187,7 @@ func TestReconcileKeys_PerKeyRateLimitOverridesDefault(t *testing.T) {
 	client := newKeysTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		if r.Method == http.MethodGet {
-			json.NewEncoder(w).Encode([]interface{}{
+			encode(t, w, []interface{}{
 				makeKey("k1", "mykey", "https://abc@sentry.io/1"),
 			})
 		} else if r.Method == http.MethodPut {
@@ -188,7 +195,7 @@ func TestReconcileKeys_PerKeyRateLimitOverridesDefault(t *testing.T) {
 				t.Errorf("decode PUT body: %v", err)
 			}
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]interface{}{})
+			encode(t, w, map[string]interface{}{})
 		}
 	})
 
@@ -213,7 +220,7 @@ func TestReconcileKeys_AdoptsRenamedKeyByID(t *testing.T) {
 		if r.Method == http.MethodGet {
 			w.Header().Set("Content-Type", "application/json")
 			// The key now has label "backend-renamed" in Sentry but same ID.
-			json.NewEncoder(w).Encode([]interface{}{
+			encode(t, w, []interface{}{
 				makeKey("k1", "backend-renamed", "https://abc@sentry.io/1"),
 			})
 		} else if r.Method == http.MethodPost {
