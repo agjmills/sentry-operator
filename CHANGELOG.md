@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.2.2](https://github.com/agjmills/sentry-operator/compare/v1.2.1...v1.2.2) (2026-04-04)
+
+
+### Bug Fixes
+
+* correct dockers_v2 field names from source (images/tags/labels) ([16fbb09](https://github.com/agjmills/sentry-operator/commit/16fbb098c713ca56bb8bac330970bad46bb913d6))
+* migrate to dockers_v2 new field names and add cosign --yes flag ([25a2fd5](https://github.com/agjmills/sentry-operator/commit/25a2fd5b2ccda99b4cd68273fd7268fbdc15803a))
+* skip goreleaser check in pre-push if not installed ([b46a96b](https://github.com/agjmills/sentry-operator/commit/b46a96b884c3c92424369a030c3e7a30823ef93b))
+
 ## [1.2.1](https://github.com/agjmills/sentry-operator/compare/v1.2.0...v1.2.1) (2026-04-04)
 
 
