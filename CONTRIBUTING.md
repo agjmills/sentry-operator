@@ -61,10 +61,28 @@ make snapshot
 
 This builds binaries and Docker images for both architectures locally without publishing anything.
 
+## PR checklist
+
+Before opening a PR, make sure the following all pass locally:
+
+```bash
+make install-hooks   # only needed once after cloning
+make build           # compiles cleanly
+make test            # all tests pass
+make lint            # no lint errors
+helm lint charts/sentry-operator/
+```
+
+If you've changed `.goreleaser.yaml` or `Dockerfile.goreleaser`:
+
+```bash
+make snapshot        # full local release build, no push
+```
+
 ## Pull requests
 
 - Open a PR against `main`
-- All CI checks must pass (build, test, lint, helm lint, docker build)
+- All CI checks must pass (build, test, lint, helm lint, goreleaser check)
 - **The squash commit title must follow [Conventional Commits](https://www.conventionalcommits.org/)** — this drives automated versioning via release-please:
 
   | Prefix | Effect |
