@@ -8,4 +8,8 @@ echo "==> helm lint"
 helm lint charts/sentry-operator/
 
 echo "==> goreleaser check"
-goreleaser check
+if command -v goreleaser &>/dev/null; then
+  goreleaser check
+else
+  echo "    goreleaser not found, skipping (CI will catch this)"
+fi
