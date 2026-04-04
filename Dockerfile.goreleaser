@@ -1,7 +1,10 @@
 FROM gcr.io/distroless/static:nonroot
 
+ARG TARGETOS
+ARG TARGETARCH
+
 WORKDIR /
-COPY manager .
+COPY ${TARGETOS}/${TARGETARCH}/manager .
 USER 65532:65532
 
 ENTRYPOINT ["/manager"]
