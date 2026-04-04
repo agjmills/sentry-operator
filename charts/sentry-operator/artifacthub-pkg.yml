@@ -1,0 +1,30 @@
+version: 0.1.0
+name: sentry-operator
+displayName: Sentry Operator
+createdAt: "2025-01-01T00:00:00Z"
+description: Kubernetes operator that automatically provisions Sentry projects and injects DSNs as Secrets.
+license: Apache-2.0
+homeURL: https://github.com/agjmills/sentry-operator
+operator: true
+operatorCapabilities: Basic Install
+category: monitoring-logging
+
+links:
+  - name: Source
+    url: https://github.com/agjmills/sentry-operator
+  - name: Documentation
+    url: https://github.com/agjmills/sentry-operator#readme
+  - name: Changelog
+    url: https://github.com/agjmills/sentry-operator/blob/main/CHANGELOG.md
+
+maintainers:
+  - name: agjmills
+    email: alex@alexmills.uk
+
+keywords:
+  - sentry
+  - operator
+  - kubernetes
+  - monitoring
+  - error-tracking
+  - dsn
