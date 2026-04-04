@@ -8,12 +8,17 @@ Contributions are welcome. This document covers how to get set up, the developme
 - A Kubernetes cluster for manual testing ([kind](https://kind.sigs.k8s.io/) works well)
 - A Sentry account and auth token with `project:read` and `project:write` scopes
 - `make`, `helm`, `kubectl`
+- [golangci-lint](https://golangci-lint.run/welcome/install/) v1.64+
+- [goreleaser](https://goreleaser.com/install/) v2+ _(optional — for snapshot builds)_
 
 ## Getting started
 
 ```bash
 git clone https://github.com/agjmills/sentry-operator
 cd sentry-operator
+
+# Set up git hooks (runs lint/tests before commit/push)
+make install-hooks
 
 # Install CRDs into your current cluster
 make install
@@ -45,6 +50,16 @@ make test
 ```bash
 make lint
 ```
+
+### Testing the release build locally
+
+If you're changing `.goreleaser.yaml` or `Dockerfile.goreleaser`, verify the snapshot build works before pushing:
+
+```bash
+make snapshot
+```
+
+This builds binaries and Docker images for both architectures locally without publishing anything.
 
 ## Pull requests
 

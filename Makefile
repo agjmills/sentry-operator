@@ -30,6 +30,10 @@ test: envtest ## Run unit and integration tests
 lint: ## Run golangci-lint
 	golangci-lint run ./...
 
+.PHONY: snapshot
+snapshot: ## Build a local snapshot release (no push, no signing)
+	goreleaser release --snapshot --clean --skip=sign
+
 ## Code generation
 
 .PHONY: generate
