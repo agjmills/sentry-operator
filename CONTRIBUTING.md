@@ -2,6 +2,10 @@
 
 Contributions are welcome. This document covers how to get set up, the development workflow, and what to expect when opening a PR.
 
+## Reporting issues
+
+Please open a GitHub issue. Include the operator version, Kubernetes version, and relevant logs from the operator pod (`kubectl logs -n sentry-operator deploy/sentry-operator`).
+
 ## Prerequisites
 
 - Go 1.24+
@@ -115,7 +119,3 @@ LLM-generated code is fine — it's a tool like any other. That said, a few expe
 - Don't use AI as a substitute for thinking. If the change is wrong or low quality, it will be rejected regardless of how it was produced.
 
 In short: AI-assisted PRs are welcome, AI-slop PRs are not.
-
-## Reporting issues
-
-Please open a GitHub issue. Include the operator version, Kubernetes version, and relevant logs from the operator pod (`kubectl logs -n sentry-operator deploy/sentry-operator`).
