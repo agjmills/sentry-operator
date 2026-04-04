@@ -63,6 +63,25 @@ jobs:
       - name: Lint chart
         run: helm lint charts/sentry-operator/
 
+  goreleaser-check:
+    name: GoReleaser Config Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Check GoReleaser config
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: "~> v2"
+          args: check
+
   docker-build:
     name: Docker Build (no push)
     runs-on: ubuntu-latest
