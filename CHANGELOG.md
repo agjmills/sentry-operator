@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.5](https://github.com/agjmills/sentry-operator/compare/v1.2.4...v1.2.5) (2026-04-04)
+
+
+### Bug Fixes
+
+* replace truncated LICENSE with full Apache 2.0 text ([8ae8aab](https://github.com/agjmills/sentry-operator/commit/8ae8aabf9b297e9074587950ebe71b00b7e16615))
+
 ## [1.2.4](https://github.com/agjmills/sentry-operator/compare/v1.2.3...v1.2.4) (2026-04-04)
 
 
