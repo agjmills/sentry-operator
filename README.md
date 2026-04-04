@@ -3,7 +3,8 @@
 [![CI](https://github.com/agjmills/sentry-operator/actions/workflows/ci.yaml/badge.svg)](https://github.com/agjmills/sentry-operator/actions/workflows/ci.yaml)
 [![Release](https://img.shields.io/github/v/release/agjmills/sentry-operator)](https://github.com/agjmills/sentry-operator/releases)
 [![License](https://img.shields.io/github/license/agjmills/sentry-operator)](LICENSE)
-[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/sentry-operator)](https://artifacthub.io/packages/helm/sentry-operator/sentry-operator)
+[![Go Report Card](https://goreportcard.com/badge/github.com/agjmills/sentry-operator)](https://goreportcard.com/report/github.com/agjmills/sentry-operator)
+[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/sentry-operator)](https://artifacthub.io/packages/search?repo=sentry-operator)
 
 A Kubernetes operator that automatically provisions [Sentry](https://sentry.io) projects and injects DSNs as Kubernetes Secrets.
 
@@ -59,7 +60,7 @@ helm upgrade --install sentry-operator oci://ghcr.io/agjmills/charts/sentry-oper
   --set sentryToken=sntrys_...
 ```
 
-The Sentry auth token requires the `project:read` and `project:write` scopes. For production use, provide it via an existing Secret rather than `--set sentryToken`:
+The Sentry auth token requires the `project:read` and `project:write` scopes. If you are only using `SentryProjectRef` (referencing existing projects rather than creating them), `project:read` alone is sufficient. For production use, provide it via an existing Secret rather than `--set sentryToken`:
 
 ```bash
 # Create the secret (e.g. via ExternalSecrets, Vault, etc.)
