@@ -106,6 +106,16 @@ charts/sentry-operator/ Helm chart
 config/crd/bases/       Generated CRD manifests
 ```
 
+## AI-assisted contributions
+
+LLM-generated code is fine — it's a tool like any other. That said, a few expectations:
+
+- **You** are responsible for the code in your PR, regardless of how it was written. Read it, understand it, and be prepared to discuss it.
+- The PR title and description should be written by a human. A one-line AI-generated summary that tells reviewers nothing is not acceptable.
+- Don't use AI as a substitute for thinking. If the change is wrong or low quality, it will be rejected regardless of how it was produced.
+
+In short: AI-assisted PRs are welcome, AI-slop PRs are not.
+
 ## Reporting issues
 
 Please open a GitHub issue. Include the operator version, Kubernetes version, and relevant logs from the operator pod (`kubectl logs -n sentry-operator deploy/sentry-operator`).
