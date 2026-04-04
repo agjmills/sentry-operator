@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/agjmills/sentry-operator/compare/v1.1.1...v1.2.0) (2026-04-04)
+
+
+### Features
+
+* add artifacthub-pkg.yml to chart for richer Artifact Hub listing ([055e819](https://github.com/agjmills/sentry-operator/commit/055e819ed8483b3b67bdec5df37375a2d8aa2540))
+
 ## [1.1.1](https://github.com/agjmills/sentry-operator/compare/v1.1.0...v1.1.1) (2026-04-04)
 
 
