@@ -20,54 +20,24 @@ builds:
     ldflags:
       - -s -w
 
-dockers:
-  - id: sentry-operator-amd64
-    use: buildx
+dockers_v2:
+  - id: sentry-operator
     dockerfile: Dockerfile.goreleaser
-    goarch: amd64
-    image_templates:
-      - ghcr.io/agjmills/sentry-operator:{{ .Tag }}-amd64
-    build_flag_templates:
-      - --platform=linux/amd64
+    templates:
+      - ghcr.io/agjmills/sentry-operator:{{ .Tag }}
+      - ghcr.io/agjmills/sentry-operator:latest
+      - ghcr.io/agjmills/sentry-operator:{{ .Major }}
+      - ghcr.io/agjmills/sentry-operator:{{ .Major }}.{{ .Minor }}
+    build_flags:
       - --label=org.opencontainers.image.title={{ .ProjectName }}
       - --label=org.opencontainers.image.version={{ .Tag }}
       - --label=org.opencontainers.image.created={{ .Date }}
       - --label=org.opencontainers.image.source=https://github.com/agjmills/sentry-operator
       - --label=org.opencontainers.image.revision={{ .FullCommit }}
       - --label=org.opencontainers.image.licenses=Apache-2.0
-
-  - id: sentry-operator-arm64
-    use: buildx
-    dockerfile: Dockerfile.goreleaser
-    goarch: arm64
-    image_templates:
-      - ghcr.io/agjmills/sentry-operator:{{ .Tag }}-arm64
-    build_flag_templates:
-      - --platform=linux/arm64
-      - --label=org.opencontainers.image.title={{ .ProjectName }}
-      - --label=org.opencontainers.image.version={{ .Tag }}
-      - --label=org.opencontainers.image.created={{ .Date }}
-      - --label=org.opencontainers.image.source=https://github.com/agjmills/sentry-operator
-      - --label=org.opencontainers.image.revision={{ .FullCommit }}
-      - --label=org.opencontainers.image.licenses=Apache-2.0
-
-docker_manifests:
-  - name_template: ghcr.io/agjmills/sentry-operator:{{ .Tag }}
-    image_templates:
-      - ghcr.io/agjmills/sentry-operator:{{ .Tag }}-amd64
-      - ghcr.io/agjmills/sentry-operator:{{ .Tag }}-arm64
-  - name_template: ghcr.io/agjmills/sentry-operator:latest
-    image_templates:
-      - ghcr.io/agjmills/sentry-operator:{{ .Tag }}-amd64
-      - ghcr.io/agjmills/sentry-operator:{{ .Tag }}-arm64
-  - name_template: ghcr.io/agjmills/sentry-operator:{{ .Major }}
-    image_templates:
-      - ghcr.io/agjmills/sentry-operator:{{ .Tag }}-amd64
-      - ghcr.io/agjmills/sentry-operator:{{ .Tag }}-arm64
-  - name_template: ghcr.io/agjmills/sentry-operator:{{ .Major }}.{{ .Minor }}
-    image_templates:
-      - ghcr.io/agjmills/sentry-operator:{{ .Tag }}-amd64
-      - ghcr.io/agjmills/sentry-operator:{{ .Tag }}-arm64
+    platforms:
+      - linux/amd64
+      - linux/arm64
 
 archives:
   - formats: [tar.gz]
@@ -86,6 +56,7 @@ signs:
     certificate: "${artifact}.pem"
     args:
       - sign-blob
+      - --yes
       - --output-signature=${signature}
       - --output-certificate=${certificate}
       - ${artifact}
