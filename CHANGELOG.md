@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.4](https://github.com/agjmills/sentry-operator/compare/v1.2.3...v1.2.4) (2026-04-04)
+
+
+### Bug Fixes
+
+* remove unsupported $ref from SentryProjectRef CRD schema ([7690586](https://github.com/agjmills/sentry-operator/commit/76905865af404e9c07eec81587aac819c7154f87))
+
 ## [1.2.3](https://github.com/agjmills/sentry-operator/compare/v1.2.2...v1.2.3) (2026-04-04)
 
 
