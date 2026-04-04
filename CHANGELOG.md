@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/agjmills/sentry-operator/compare/v1.2.0...v1.2.1) (2026-04-04)
+
+
+### Bug Fixes
+
+* replace dockers_v2 with dockers+manifests, add goreleaser check to CI ([95d9e02](https://github.com/agjmills/sentry-operator/commit/95d9e0219125c7c7af5d5b007291a68969eafaa1))
+
 ## [1.2.0](https://github.com/agjmills/sentry-operator/compare/v1.1.1...v1.2.0) (2026-04-04)
 
 
