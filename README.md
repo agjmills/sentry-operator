@@ -30,6 +30,8 @@ $ kubectl get secret myapp-sentry -n myapp -o jsonpath='{.data.SENTRY_DSN}' | ba
 https://abc123@o123.ingest.sentry.io/456
 ```
 
+> **Sentry plan requirement:** The `SentryProject` CRD creates projects via the Sentry API, which requires a **Business plan** or above on sentry.io. If you are on a free or Team plan, create your projects manually in the Sentry UI and use `SentryProjectRef` instead — it references an existing project and fetches the DSN without needing elevated API permissions.
+
 ---
 
 ## How it works
